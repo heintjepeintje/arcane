@@ -1,0 +1,3 @@
+[submodule "lib/minilog"]
+	path = lib/minilog
+	url = https://github.com/heintjepeintje/minilog
