@@ -4,6 +4,7 @@
 #include <arcane/core/types.hh>
 #include "./mesh.hh"
 #include "./pipeline.hh"
+#include "./texture.hh"
 #include "./context.hh"
 
 namespace arcane::graphics {
@@ -21,6 +22,7 @@ namespace arcane::graphics {
 		void set_pipeline(const Pipeline& pipeline);
 		void set_viewport(const Rect2D& viewport);
 		void set_scissor(const Rect2D& scissor);
+		void set_texture_sampler(u32 index, const Texture& texture, const Sampler& sampler);
 		void draw_indexed(u32 instance_count, u32 index_count);
 		void end();
 

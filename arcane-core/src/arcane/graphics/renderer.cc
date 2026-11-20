@@ -91,6 +91,13 @@ namespace arcane::graphics {
 		glScissor(scissor.position.x, scissor.position.y, scissor.size.x, scissor.size.y);
 	}
 
+	void Renderer::set_texture_sampler(u32 index, const Texture& texture, const Sampler& sampler) {
+		AR_TRACE();
+		_context->bind();
+		glBindTextureUnit(index, texture.id());
+		glBindSampler(index, sampler.id());
+	}
+
 	void Renderer::draw_indexed(u32 instance_count, u32 index_count) {
 		AR_TRACE();
 		_context->bind();
