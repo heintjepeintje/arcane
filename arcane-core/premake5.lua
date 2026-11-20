@@ -14,6 +14,9 @@ project('arcane-core')
 
 	includedirs({
 		'%{wks.location}/../lib/minilog/include',
+		'%{wks.location}/../lib/glfw/include',
+		'%{wks.location}/../lib/minimath/include',
+		'%{wks.location}/../lib/glad/include',
 		'src'
 	})
 
@@ -27,6 +30,7 @@ project('arcane-core')
 	filter('configurations:release')
 		defines({
 			'AR_BUILD_CONFIG_RELEASE=1',
+			'AR_DISABLE_LOGGING',
 			'NDEBUG=1'
 		})
 		optimize('Speed')

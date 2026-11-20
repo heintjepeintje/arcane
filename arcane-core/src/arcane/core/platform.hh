@@ -15,6 +15,7 @@
 
 #if defined(__GNUC__)
 #	define AR_PLATFORM_COMPILER_GNU 1
+#	define AR_PLATFORM_COMPILER_NAME "GCC"
 #	define AR_PLATFORM_COMPILER_VERSION_VARIANT 0 
 #	define AR_PLATFORM_COMPILER_VERSION_MAJOR __GNUC__ 
 #	define AR_PLATFORM_COMPILER_VERSION_MINOR __GNUC_MINOR__ 
@@ -47,8 +48,13 @@
 #	define AR_COMPILER_CHAR16_TYPE __WCHAR_TYPE__ 
 #elif defined(__clang__)
 #	define AR_PLATFORM_COMPILER_CLANG 1
+#	define AR_PLATFORM_COMPILER_NAME "Clang"
 #endif
 
-namespace arcane { }
+namespace arcane {
+
+	static const char* compiler_name = AR_PLATFORM_COMPILER_NAME;
+
+}
 
 #endif // AR_CORE_PLATFORM_HH_

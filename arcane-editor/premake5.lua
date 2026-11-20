@@ -12,20 +12,31 @@ project('arcane-editor')
 		'src/**.cc',
 	})
 
+	prebuildcommands({
+		'glslc --target-env=opengl -fshader-stage=vertex -fentry-point=main -c %{prj.location}/../res/shaders/default/vertex.glsl -o %{prj.location}/../bin/shaders/default/vertex.spv.o',
+		'glslc --target-env=opengl -fshader-stage=fragment -fentry-point=main -c %{prj.location}/../res/shaders/default/fragment.glsl -o %{prj.location}/../bin/shaders/default/fragment.spv.o',
+	})
+
 	includedirs({
 		'%{wks.location}/../lib/minilog/include',
+		'%{wks.location}/../lib/glfw/include',
+		'%{wks.location}/../lib/minimath/include',
+		'%{wks.location}/../lib/glad/include',
 		'%{wks.location}/../arcane-core/src',
 		'src'
 	})
 
 	libdirs({
-		'%{wks.location}/../arcane-core/bin/%{cfg.buildcfg}',
-		'%{wks.location}/../lib/minilog/bin'
+		'%{wks.location}/../lib/minilog/bin',
+		'%{wks.location}/../lib/glfw/build/src',
+		'%{wks.location}/../arcane-core/bin/%{cfg.buildcfg}'
 	})
 
 	links({
 		'arcane-core',
-		'minilog'
+		'minilog',
+		'glfw3',
+		'glad'
 	})
 
 	filter('configurations:debug')	
@@ -38,6 +49,7 @@ project('arcane-editor')
 	filter('configurations:release')
 		defines({
 			'AR_BUILD_CONFIG_RELEASE=1',
+			'AR_DISABLE_LOGGING',
 			'NDEBUG=1'
 		})
 		optimize('Speed')

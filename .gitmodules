@@ -1,3 +1,9 @@
 [submodule "lib/minilog"]
 	path = lib/minilog
 	url = https://github.com/heintjepeintje/minilog
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = https://github.com/glfw/glfw
+[submodule "lib/minimath"]
+	path = lib/minimath
+	url = https://github.com/heintjepeintje/minimath
