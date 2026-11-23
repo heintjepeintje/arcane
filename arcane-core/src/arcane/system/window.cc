@@ -3,6 +3,7 @@
 #include <arcane/core/log.hh>
 
 #include "GLFW/glfw3.h"
+#include "arcane/system/memory.hh"
 #include "minilog.h"
 
 namespace arcane {
@@ -16,36 +17,18 @@ namespace arcane {
 		return true;
 	}
 
-	Window Window::create(const std::string& title, u32 width, u32 height) {
-		Window window;
-		window._window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-		if (window._window == nullptr) {
+	UniquePtr<Window> Window::create(IAllocator& allocator, const std::string& title, u32 width, u32 height) {
+		UniquePtr<Window> window = UniquePtr<Window>::create(allocator);
+		window.ptr()->_window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+		if (window.ptr()->_window == nullptr) {
 			ml_log(AR_CORE_LOGGER_ID, ML_LOG_SEVERITY_ERROR, "Failed to create window.");
-			return Window();
+			return UniquePtr<Window>{};
 		}
 
 		return window;
 	}
 
-
-	Window::Window() : _window(nullptr) {
-		AR_TRACE();
-	}
-
-	Window::Window(Window&& move) : _window(move._window) {
-		AR_TRACE();
-		move._window = nullptr;
-	}
-	
-	Window& Window::operator=(Window&& move) {
-		AR_TRACE();
-		_window = move._window;
-		move._window = nullptr;
-		return *this;
-	}
-
 	Window::~Window() {
-		AR_TRACE();
 		destroy();
 	}
 

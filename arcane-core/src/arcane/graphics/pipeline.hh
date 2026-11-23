@@ -30,24 +30,19 @@ namespace arcane::graphics {
 			PIXEL
 		};
 
-		static Shader create(Context& context, Type type, const View<u8>& binary);
+		static UniquePtr<Shader> create(IAllocator& allocator, const SharedPtr<Context>& context, Type type, const View<u8>& binary);
 
-		Shader();
-		Shader(const Shader& copy) = delete;
-		Shader& operator=(const Shader& copy) = delete;
-		Shader(Shader&& move);
-		Shader& operator=(Shader&& move);
 		~Shader();
-
-		inline GLuint id() const { return _id; }
 
 		void destroy() override;
 		bool is_valid() const override;
 
-		inline Context& context() override { return *_context; }
-		inline const Context& context() const override { return *_context; }
+		inline Context& context() override { return _context.ref(); }
+		inline const Context& context() const override { return _context.ref(); }
+
+		inline GLuint id() const { return _id; }
 	private:
-		Context* _context;
+		SharedPtr<Context> _context;
 		Type _type;
 		GLuint _id;
 	};
@@ -81,43 +76,34 @@ namespace arcane::graphics {
 			FaceCullingMode face_culling_mode;
 			Rect2D viewport;
 			Rect2D scissor;
-			Shader vertex_shader;
-			Shader fragment_shader;
+			Shader* vertex_shader;
+			Shader* fragment_shader;
 		};
 
-		static Pipeline create(Context& context, const Info& info);
+		static UniquePtr<Pipeline> create(IAllocator& allocator, const SharedPtr<Context>& context, const Info& info);
 
-		Pipeline();
-		Pipeline(const Pipeline& copy) = delete;
-		Pipeline& operator=(const Pipeline& copy) = delete;
-		Pipeline(Pipeline&& move);
-		Pipeline& operator=(Pipeline&& move);
 		~Pipeline();
 
 		void destroy() override;
 		bool is_valid() const override;
 
-		inline PrimitiveType primitive_type() const { return _data.primitive_type; }
-		inline WindingOrder winding_order() const { return _data.winding_order; }
-		inline FaceCullingMode face_culling_mode() const { return _data.face_culling_mode; }
-		inline Rect2D viewport() const { return _data.viewport; }
-		inline Rect2D scissor() const { return _data.scissor; }
+		inline PrimitiveType primitive_type() const { return _primitive_type; }
+		inline WindingOrder winding_order() const { return _winding_order; }
+		inline FaceCullingMode face_culling_mode() const { return _face_culling_mode; }
+		inline Rect2D viewport() const { return _viewport; }
+		inline Rect2D scissor() const { return _scissor; }
 		inline GLuint program_id() const { return _program_id; }
 
-		inline Context& context() override { return *_context; }
-		inline const Context& context() const override { return *_context; }
+		inline Context& context() override { return _context.ref(); }
+		inline const Context& context() const override { return _context.ref(); }
 
 	private:
-		struct Data {
-			PrimitiveType primitive_type; 
-			WindingOrder winding_order;
-			FaceCullingMode face_culling_mode;
-			Rect2D viewport, scissor;
-		};
-
-		Context* _context;
-		Data _data;
+		SharedPtr<Context> _context;
 		GLuint _program_id;
+		PrimitiveType _primitive_type; 
+		WindingOrder _winding_order;
+		FaceCullingMode _face_culling_mode;
+		Rect2D _viewport, _scissor;
 	};
 
 }

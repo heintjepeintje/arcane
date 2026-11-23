@@ -12,31 +12,26 @@ namespace arcane::graphics {
 
 	class Mesh : public Object {
 	public:
-		static Mesh create(Context& context);
+		static UniquePtr<Mesh> create(IAllocator& allocator, const SharedPtr<Context>& context);
 
-		Mesh();
-		Mesh(const Mesh& mesh) = delete;
-		Mesh& operator=(const Mesh& mesh) = delete;
-		Mesh(Mesh&& mesh) = default;
-		Mesh& operator=(Mesh&& mesh) = default;
 		~Mesh();
 
 		void destroy() override;
 		bool is_valid() const override;
 
-		void set_vertex_buffer(u32 index, const Buffer& buffer, u64 offset, u64 stride);
-		void set_index_buffer(const Buffer& buffer);
+		void set_vertex_buffer(u32 index, const SharedPtr<Buffer>& buffer, u64 offset, u64 stride);
+		void set_index_buffer(const SharedPtr<Buffer>& buffer);
 		void set_layout(const std::vector<InputElement>& layout);
 
-		inline const Context& context() const override { return *_context; }
-		inline Context& context() override { return *_context; }
+		inline const Context& context() const override { return _context.ref(); }
+		inline Context& context() override { return _context.ref(); }
 		inline GLuint id() const { return _id; }
 
 	private:
-		Context* _context;
+		SharedPtr<Context> _context;
 		GLuint _id;
-		std::vector<const Buffer*> _vertex_buffers;
-		const Buffer* _index_buffer;
+		std::vector<SharedPtr<Buffer>> _vertex_buffers;
+		SharedPtr<Buffer> _index_buffer;
 		std::vector<InputElement> _layout;
 	};
 

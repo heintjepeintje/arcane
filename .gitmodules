@@ -7,3 +7,6 @@
 [submodule "lib/minimath"]
 	path = lib/minimath
 	url = https://github.com/heintjepeintje/minimath
+[submodule "lib/glm"]
+	path = lib/glm
+	url = https://github.com/g-truc/glm

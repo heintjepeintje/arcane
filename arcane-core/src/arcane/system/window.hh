@@ -2,6 +2,7 @@
 #define AR_SYSTEM_WINDOW_HH_
 
 #include <arcane/core/types.hh>
+#include <arcane/system/memory.hh>
 #include <arcane/geometry/shape2d.hh>
 #include <GLFW/glfw3.h>
 #include <string>
@@ -11,16 +12,13 @@ namespace arcane {
 	class Window {
 	public:
 		static bool init();
-		static Window create(const std::string& title, u32 width, u32 height);
+		static UniquePtr<Window> create(IAllocator& allocator, const std::string& title, u32 width, u32 height);
 
-		Window();
-		Window(const Window& copy) = delete;
-		Window& operator=(const Window& copy) = delete;
-		Window(Window&& move);
-		Window& operator=(Window&& move);
 		~Window();
 
 		void destroy();
+		inline bool is_valid() const { return _window != NULL; }
+
 		void show();
 		void update();
 
@@ -33,7 +31,6 @@ namespace arcane {
 
 		Rect2D inner_rect() const;
 
-		inline bool is_valid() const { return _window != NULL; }
 		inline GLFWwindow* handle() { return _window; }
 	private:
 		GLFWwindow* _window;

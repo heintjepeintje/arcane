@@ -39,22 +39,17 @@ namespace arcane::graphics {
 			u32 layer_count;
 		};
 
-		static Texture create(Context& context, const Info& info);
+		static UniquePtr<Texture> create(IAllocator& allocator, const SharedPtr<Context>& context, const Info& info);
 
-		Texture();
-		Texture(const Texture& copy) = delete;
-		Texture& operator=(const Texture& copy) = delete;
-		Texture(Texture&& copy);
-		Texture& operator=(Texture&& copy);
 		~Texture();
-
-		void set_image(u32 level, u32 width, u32 height, ImageFormat format, const View<u8>& data);
 
 		void destroy() override;
 		bool is_valid() const override;
 
-		inline Context& context() override { return *_context; }
-		inline const Context& context() const override { return *_context; }
+		void set_image(u32 level, u32 width, u32 height, ImageFormat format, const View<u8>& data);
+
+		inline Context& context() override { return _context.ref(); }
+		inline const Context& context() const override { return _context.ref(); }
 
 		inline GLuint id() const { return _id; }
 
@@ -67,7 +62,7 @@ namespace arcane::graphics {
 		inline u32 level_count() const { return _level_count; }
 
 	private:
-		Context* _context;
+		SharedPtr<Context> _context;
 		GLuint _id;
 		Type _type;
 		u32 _sample_count;
@@ -100,23 +95,18 @@ namespace arcane::graphics {
 			float lod_bias;
 			float min_lod, max_lod;
 			WrapMode s_wrap, t_wrap, r_wrap;
-			mm_vec4_t border_color;
+			glm::vec4 border_color;
 		};
 
-		static Sampler create(Context& context, const Info& info);
+		static UniquePtr<Sampler> create(IAllocator& allocator, const SharedPtr<Context>& context, const Info& info);
 
-		Sampler();
-		Sampler(const Sampler& other) = delete;
-		Sampler& operator=(const Sampler& other) = delete;
-		Sampler(Sampler&& move);
-		Sampler& operator=(Sampler&& move);
 		~Sampler();
 
 		void destroy() override;
 		bool is_valid() const override;
 
-		inline Context& context() override { return *_context; }
-		inline const Context& context() const override { return *_context; }
+		inline Context& context() override { return _context.ref(); }
+		inline const Context& context() const override { return _context.ref(); }
 
 		inline GLuint id() const { return _id; }
 
@@ -128,7 +118,7 @@ namespace arcane::graphics {
 		inline f32 max_lod() const { return _max_lod; }
 
 	private:
-		Context* _context;
+		SharedPtr<Context> _context;
 		GLuint _id;
 		SamplingMode _min_filter;
 		SamplingMode _mipmap_filter;

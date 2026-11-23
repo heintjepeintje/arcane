@@ -1,5 +1,6 @@
 #include "./texture.hh"
 #include "arcane/graphics/core.hh"
+#include "arcane/system/memory.hh"
 
 #include <arcane/core/log.hh>
 
@@ -111,54 +112,16 @@ namespace arcane::graphics {
 		}
 	}
 
-	Texture Texture::create(Context& context, const Info& info) {
+	UniquePtr<Texture> Texture::create(IAllocator& allocator, const SharedPtr<Context>& context, const Info& info) {
 		AR_TRACE();
-		Texture texture{};
-		texture._context = &context;
-		texture._context->bind();
+		UniquePtr<Texture> texture = UniquePtr<Texture>::create(allocator);
+		texture.ptr()->_context = context.share();
+		texture.ptr()->_context.ptr()->bind();
 
-		glCreateTextures(to_opengl_texture_type(info.type, info.sample_count), 1, &texture._id);
-		allocate_texture_storage(info.type, texture._id, info.sample_count, info.format, info.level_count, info.width, info.height, info.depth);
+		glCreateTextures(to_opengl_texture_type(info.type, info.sample_count), 1, &texture.ptr()->_id);
+		allocate_texture_storage(info.type, texture.ptr()->_id, info.sample_count, info.format, info.level_count, info.width, info.height, info.depth);
 
 		return texture;
-	}
-
-	Texture::Texture() { }
-
-	Texture::Texture(Texture&& copy) : _context(copy._context), _id(copy._id), _type(copy._type), _sample_count(copy._sample_count), _format(copy._format), _width(copy._width), _height(copy._height), _depth(copy._depth), _level_count(copy._level_count) {
-		copy._context = nullptr;
-		copy._id = 0;
-		copy._type = Type::NONE;
-		copy._sample_count = 0;
-		copy._format = ImageFormat::NONE;
-		copy._width = 0;
-		copy._height = 0;
-		copy._depth = 0;
-		copy._level_count = 0;
-	}
-
-	Texture& Texture::operator=(Texture&& copy) {
-		_context = copy._context;
-		_id = copy._id;
-		_type = copy._type;
-		_sample_count = copy._sample_count;
-		_format = copy._format;
-		_width = copy._width;
-		_height = copy._height;
-		_depth = copy._depth;
-		_level_count = copy._level_count;
-
-		copy._context = nullptr;
-		copy._id = 0;
-		copy._type = Type::NONE;
-		copy._sample_count = 0;
-		copy._format = ImageFormat::NONE;
-		copy._width = 0;
-		copy._height = 0;
-		copy._depth = 0;
-		copy._level_count = 0;
-
-		return *this;
 	}
 
 	Texture::~Texture() {
@@ -166,21 +129,29 @@ namespace arcane::graphics {
 	}
 
 	void Texture::set_image(u32 level, u32 width, u32 height, ImageFormat format, const View<u8>& data) {
+		if (!is_valid()) return;
 		AR_TRACE();
-		_context->bind();
+		_context.ptr()->bind();
 		glTextureSubImage2D(_id, level, 0, 0, width, height, to_opengl_pixel_format(format), GL_UNSIGNED_BYTE, data.data());
 	}
 
 	void Texture::destroy() {
 		if (!is_valid()) return;
 		AR_TRACE();
-		_context->bind();
+
+		_context.ptr()->bind();
+
 		glDeleteTextures(1, &_id);
+		_id = 0;
+
+		_context.release();
 	}
 
 	bool Texture::is_valid() const {
-		if (_context == nullptr) return false;
-		_context->bind();
+		if (!_context.is_valid()) return false;
+		if (!_context.ptr()->is_valid()) return false;
+
+		_context.ptr()->bind();
 		return glIsTexture(_id);
 	}
 
@@ -211,60 +182,25 @@ namespace arcane::graphics {
 		}
 	}
 
-	Sampler Sampler::create(Context& context, const Info& info) {
-		Sampler sampler{};
-		sampler._context = &context;
-		sampler._context->bind();
+	UniquePtr<Sampler> Sampler::create(IAllocator& allocator, const SharedPtr<Context>& context, const Info& info) {
+		UniquePtr<Sampler> sampler = UniquePtr<Sampler>::create(allocator);
+		sampler.ptr()->_context = context.share();
+		sampler.ptr()->_context.ptr()->bind();
 
-		glCreateSamplers(1, &sampler._id);
-		glSamplerParameterf(sampler._id, GL_TEXTURE_LOD_BIAS, info.lod_bias);
-		glSamplerParameteri(sampler._id, GL_TEXTURE_MIN_FILTER, to_opengl_min_filter(info.min_filter, info.mipmap_filter));
-		glSamplerParameteri(sampler._id, GL_TEXTURE_MAG_FILTER, to_opengl_mag_filter(info.min_filter));
-		glSamplerParameterf(sampler._id, GL_TEXTURE_MIN_LOD, info.min_lod);
-		glSamplerParameterf(sampler._id, GL_TEXTURE_MAX_LOD, info.max_lod);
-		glSamplerParameterf(sampler._id, GL_TEXTURE_WRAP_S, to_opengl_sampler_wrap(info.s_wrap));
-		glSamplerParameterf(sampler._id, GL_TEXTURE_WRAP_T, to_opengl_sampler_wrap(info.t_wrap));
-		glSamplerParameterf(sampler._id, GL_TEXTURE_WRAP_R, to_opengl_sampler_wrap(info.r_wrap));
+		glCreateSamplers(1, &sampler.ptr()->_id);
+		glSamplerParameterf(sampler.ptr()->_id, GL_TEXTURE_LOD_BIAS, info.lod_bias);
+		glSamplerParameteri(sampler.ptr()->_id, GL_TEXTURE_MIN_FILTER, to_opengl_min_filter(info.min_filter, info.mipmap_filter));
+		glSamplerParameteri(sampler.ptr()->_id, GL_TEXTURE_MAG_FILTER, to_opengl_mag_filter(info.min_filter));
+		glSamplerParameterf(sampler.ptr()->_id, GL_TEXTURE_MIN_LOD, info.min_lod);
+		glSamplerParameterf(sampler.ptr()->_id, GL_TEXTURE_MAX_LOD, info.max_lod);
+		glSamplerParameterf(sampler.ptr()->_id, GL_TEXTURE_WRAP_S, to_opengl_sampler_wrap(info.s_wrap));
+		glSamplerParameterf(sampler.ptr()->_id, GL_TEXTURE_WRAP_T, to_opengl_sampler_wrap(info.t_wrap));
+		glSamplerParameterf(sampler.ptr()->_id, GL_TEXTURE_WRAP_R, to_opengl_sampler_wrap(info.r_wrap));
 
 		f32 border_color[] = { info.border_color.x, info.border_color.y, info.border_color.z, info.border_color.w };
-		glSamplerParameterfv(sampler._id, GL_TEXTURE_BORDER_COLOR, border_color);
+		glSamplerParameterfv(sampler.ptr()->_id, GL_TEXTURE_BORDER_COLOR, border_color);
 
 		return sampler;
-	}
-
-	Sampler::Sampler() { }
-
-	Sampler::Sampler(Sampler&& move) : _context(move._context), _id(move._id), _min_filter(move._min_filter), _mipmap_filter(move._mipmap_filter), _mag_filter(move._mag_filter), _lod_bias(move._lod_bias), _min_lod(move._min_lod), _max_lod(move._max_lod) {
-		move._context = nullptr;
-		move._id = 0;
-		move._min_filter = SamplingMode::NONE;
-		move._mipmap_filter = SamplingMode::NONE;
-		move._mag_filter = SamplingMode::NONE;
-		move._lod_bias = 0;
-		move._min_lod = 0;
-		move._max_lod = 0;
-	}
-
-	Sampler& Sampler::operator=(Sampler&& move) {
-		_context = move._context;
-		_id = move._id;
-		_min_filter = move._min_filter;
-		_mipmap_filter = move._mipmap_filter;
-		_mag_filter = move._mag_filter;
-		_lod_bias = move._lod_bias;
-		_min_lod = move._min_lod;
-		_max_lod = move._max_lod;
-
-		move._context = nullptr;
-		move._id = 0;
-		move._min_filter = SamplingMode::NONE;
-		move._mipmap_filter = SamplingMode::NONE;
-		move._mag_filter = SamplingMode::NONE;
-		move._lod_bias = 0;
-		move._min_lod = 0;
-		move._max_lod = 0;
-
-		return *this;
 	}
 
 	Sampler::~Sampler() {
@@ -273,13 +209,19 @@ namespace arcane::graphics {
 
 	void Sampler::destroy() {
 		if (!is_valid()) return;
-		_context->bind();
+
+		_context.ptr()->bind();
+
 		glDeleteSamplers(1, &_id);
+		_id = 0;
+
+		_context.release();
 	}
 
 	bool Sampler::is_valid() const {
-		if (_context == nullptr) return false;
-		_context->bind();
+		if (!_context.is_valid()) return false;
+		if (!_context.ptr()->is_valid()) return false;
+		_context.ptr()->bind();
 		return glIsSampler(_id);
 	}
 

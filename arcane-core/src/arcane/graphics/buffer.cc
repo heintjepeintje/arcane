@@ -4,48 +4,8 @@
 
 namespace arcane::graphics {
 
-	BufferMapping::BufferMapping(Context& context, GLuint buffer, u64 offset, u64 length, BufferAccessFlags access)
-		: _context(&context), _buffer(buffer), _length(length), _access_flags(access) {
-		AR_TRACE();
-		_context->bind();
-
-		GLbitfield opengl_access = 0;
-		if (access & AR_BUFFER_ACCESS_FLAG_READ_BIT) opengl_access |= GL_MAP_READ_BIT;
-		if (access & AR_BUFFER_ACCESS_FLAG_WRITE_BIT) opengl_access |= GL_MAP_WRITE_BIT;
-
-		_data = reinterpret_cast<u8*>(glMapNamedBufferRange(buffer, offset, length, opengl_access));
-	}
-
-	BufferMapping::~BufferMapping() {
-		unmap();
-	}
-	
-	void BufferMapping::unmap() {
-		if (_data == nullptr) return;
-		AR_TRACE();
-		_context->bind();
-		glUnmapNamedBuffer(_buffer);
-		_data = nullptr;
-	}
-
-	bool BufferMapping::is_valid() const {
-		return _data != nullptr;
-	}
-
-	View<u8> BufferMapping::view(u64 offset, u64 length) const {
-		if (!is_valid()) return View<u8>{};
-		AR_TRACE();
-		return View<u8>{ _data + offset, length };
-	}
-
-	Slice<u8> BufferMapping::slice(u64 offset, u64 length) {
-		if (!is_valid()) return Slice<u8>{};
-		AR_TRACE();
-		return Slice<u8>{ _data + offset, length };
-	}
-
-	Buffer Buffer::create(Context &context, BufferType type, u64 size, BufferFlags flags) {
-		if (!context.is_valid()) return Buffer{};
+	UniquePtr<Buffer> Buffer::create(IAllocator& allocator, const SharedPtr<Context> &context, Type type, u64 size, BufferFlags flags) {
+		if (!context.is_valid()) return UniquePtr<Buffer>{};
 		AR_TRACE();
 
 		GLbitfield opengl_buffer_flags = 0;
@@ -53,13 +13,13 @@ namespace arcane::graphics {
 		if (flags & AR_BUFFER_FLAG_MAP_READABLE) opengl_buffer_flags |= GL_MAP_READ_BIT;
 		if (flags & AR_BUFFER_FLAG_MAP_WRITEABLE) opengl_buffer_flags |= GL_MAP_WRITE_BIT;
 
-		Buffer buffer{};
-		buffer._context = &context;
-		buffer._context->bind();
-		buffer._size = size;
+		UniquePtr<Buffer> buffer = UniquePtr<Buffer>::create(allocator);
+		buffer.ptr()->_context = context.share();
+		buffer.ptr()->_context.ptr()->bind();
+		buffer.ptr()->_size = size;
 
-		glCreateBuffers(1, &buffer._id);
-		glNamedBufferStorage(buffer._id, size, nullptr, opengl_buffer_flags);
+		glCreateBuffers(1, &buffer.ptr()->_id);
+		glNamedBufferStorage(buffer.ptr()->_id, size, nullptr, opengl_buffer_flags);
 
 		return buffer;
 	}
@@ -76,27 +36,6 @@ namespace arcane::graphics {
 		glCopyNamedBufferSubData(input.id(), output.id(), read_offset, write_offset, length);
 	}
 
-	Buffer::Buffer(Buffer&& buffer) : _context(buffer._context), _id(buffer._id), _size(buffer._size) {
-		AR_TRACE();
-		buffer._context = nullptr;
-		buffer._id = 0;
-		buffer._size = 0;
-	}
-
-	Buffer& Buffer::operator=(Buffer&& buffer) {
-		AR_TRACE();
-
-		_context = buffer._context;
-		_id = buffer._id;
-		_size = buffer._size;
-
-		buffer._context = nullptr;
-		buffer._id = 0;
-		buffer._size = 0;
-
-		return *this;
-	}
-
 	Buffer::~Buffer() {
 		destroy();
 	}
@@ -104,28 +43,51 @@ namespace arcane::graphics {
 	void Buffer::destroy() {
 		if (!is_valid()) return;
 		AR_TRACE();
-		_context->bind();
+		_context.ptr()->bind();
 
 		glDeleteBuffers(1, &_id);
 
-		_context = nullptr;
+		_context.release();
+
 		_id = 0;
 		_size = 0;
 	}
 
-	const BufferMapping Buffer::map(u64 offset, u64 length) const {
+	View<u8> Buffer::map(u64 offset, u64 length) const {
+		if (!is_valid()) return View<u8>{};
 		AR_TRACE();
-		return BufferMapping{ *_context, _id, offset, length, AR_BUFFER_ACCESS_FLAG_READ_BIT };
+		_context.ptr()->bind();
+
+		return View<u8> {
+			reinterpret_cast<const u8*>(glMapNamedBufferRange(_id, offset, length, GL_MAP_READ_BIT)),
+			length
+		};
 	}
 
-	BufferMapping Buffer::map(u64 offset, u64 length) {
+	Slice<u8> Buffer::map(u64 offset, u64 length) {
+		if (!is_valid()) return Slice<u8>{};
 		AR_TRACE();
-		return BufferMapping{ *_context, _id, offset, length, AR_BUFFER_ACCESS_FLAG_READ_BIT | AR_BUFFER_ACCESS_FLAG_WRITE_BIT };
+		_context.ptr()->bind();
+
+		return Slice<u8> {
+			reinterpret_cast<u8*>(glMapNamedBufferRange(_id, offset, length, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT)),
+			length
+		};
+	}
+
+	void Buffer::unmap() {
+		if (!is_valid()) return;
+		AR_TRACE();
+		_context.ref().bind();
+
+		glUnmapNamedBuffer(_id);
 	}
 	
 	bool Buffer::is_valid() const {
-		if (_context == nullptr) return false;
-		_context->bind();
+		if (!_context.is_valid()) return false;
+		if (!_context.ref().is_valid()) return false;
+		_context.ref().bind();
+
 		return glIsBuffer(_id);
 	}
 

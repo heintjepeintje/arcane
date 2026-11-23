@@ -15,7 +15,7 @@ project('arcane-core')
 	includedirs({
 		'%{wks.location}/../lib/minilog/include',
 		'%{wks.location}/../lib/glfw/include',
-		'%{wks.location}/../lib/minimath/include',
+		'%{wks.location}/../lib/glm',
 		'%{wks.location}/../lib/glad/include',
 		'src'
 	})
@@ -23,6 +23,7 @@ project('arcane-core')
 	filter('configurations:debug')	
 		defines({
 			'AR_BUILD_CONFIG_DEBUG=1',
+			'AR_NO_TRACE=1',
 			'_DEBUG=1'
 		})
 		symbols('On')

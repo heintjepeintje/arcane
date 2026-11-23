@@ -26,16 +26,16 @@ namespace arcane::graphics {
 		}
 	}
 
-	Context Context::create(Window& window) {
+	UniquePtr<Context> Context::create(IAllocator& allocator, const SharedPtr<Window>& window) {
 		AR_TRACE();
-		Context context{};
-		context._window = &window;
+		UniquePtr<Context> context = UniquePtr<Context>::create(allocator);
+		context.ptr()->_window = window.share();
 
 		GLFWwindow* old_context = glfwGetCurrentContext();
-		glfwMakeContextCurrent(context._window->handle());
+		glfwMakeContextCurrent(context.ptr()->_window.ptr()->handle());
 		if (!gladLoadGL()) {
 			ml_log(AR_CORE_LOGGER_ID, ML_LOG_SEVERITY_FATAL, "Failed to load OpenGL functions.");
-			return Context{};
+			return UniquePtr<Context>{};
 		}
 
 		glEnable(GL_DEBUG_OUTPUT);
@@ -51,27 +51,23 @@ namespace arcane::graphics {
 		return context;
 	}
 
-	Context::Context() : _window(nullptr) { }
-
-	Context::~Context() { _window = nullptr; }
-
-	void Context::bind() {
-		glfwMakeContextCurrent(_window->handle());
+	void Context::bind() const {
+		glfwMakeContextCurrent(_window.ptr()->handle());
 	}
 
-	void Context::unbind() {
-		if (glfwGetCurrentContext() != _window->handle()) return;
+	void Context::unbind() const {
+		if (glfwGetCurrentContext() != _window.ptr()->handle()) return;
 		AR_TRACE();
 		glfwMakeContextCurrent(nullptr);
 	}
 
 	void Context::swap_buffers() {
 		AR_TRACE();
-		glfwSwapBuffers(_window->handle());
+		glfwSwapBuffers(_window.ptr()->handle());
 	}
 
 	bool Context::operator==(const Context& context) const {
-		return _window->handle() == context._window->handle();
+		return _window.ptr()->handle() == context._window.ptr()->handle();
 	}
 
 }

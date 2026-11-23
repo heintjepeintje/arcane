@@ -2,6 +2,7 @@
 #define AR_GRAPHICS_CORE_HH_
 
 #include <glad/glad.h>
+#include <arcane/system/memory.hh>
 #include "./context.hh"
 
 namespace arcane::graphics {
